@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>T3N Account Info Generator</title>
+<style>
+  body {
+    background: #0f0f0f;
+    color: #eaeaea;
+    font-family: monospace;
+    padding: 20px;
+  }
+  input, button {
+    background: #1e1e1e;
+    color: #eaeaea;
+    border: 1px solid #333;
+    padding: 6px;
+    margin: 4px 0;
+    width: 260px;
+  }
+  button {
+    cursor: pointer;
+    width: 270px;
+  }
+  textarea {
+    width: 100%;
+    height: 220px;
+    background: #111;
+    color: #00ff9c;
+    border: 1px solid #333;
+    margin-top: 10px;
+    padding: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h2>T3N Account Generator</h2>
+
+<input id="nick" placeholder="Nickname"><br>
+<input id="pass" placeholder="Password"><br>
+<input id="time" placeholder="Time HH:MM or D"><br>
+<input id="ip" placeholder="IP or D / fake"><br><br>
+
+<label><input type="checkbox" id="2fa"> 2FA</label><br>
+<label><input type="checkbox" id="age"> age verified</label><br>
+<label><input type="checkbox" id="chat"> chat</label><br>
+<label><input type="checkbox" id="voice"> voice chat</label><br>
+<label><input type="checkbox" id="email"> email</label><br>
+<label><input type="checkbox" id="busy"> busy</label><br><br>
+
+<button onclick="generate()">Generate & Copy</button>
+
+<textarea id="out" readonly></textarea>
+
+<script>
+function unixFromHHMM(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return Math.floor(d.getTime() / 1000);
+}
+
+function fakeIP() {
+  return Array.from({length:4}, () => Math.floor(Math.random()*254)+1).join(".");
+}
+
+async function getIP() {
+  try {
+    const r = await fetch("https://api.ipify.org?format=json");
+    const j = await r.json();
+    return j.ip;
+  } catch {
+    return "127.0.0.1";
+  }
+}
+
+async function generate() {
+  const nick = document.getElementById("nick").value || "unknown";
+  const pass = document.getElementById("pass").value || "********";
+
+  let t = document.getElementById("time").value;
+  let timestamp;
+  if (!t || t.toLowerCase() === "d") {
+    timestamp = `<t:${Math.floor(Date.now()/1000)}:R>`;
+  } else {
+    timestamp = `<t:${unixFromHHMM(t)}:R>`;
+  }
+
+  let ipInput = document.getElementById("ip").value;
+  let ip;
+  if (!ipInput || ipInput.toLowerCase() === "d") {
+    ip = await getIP();
+  } else if (ipInput.toLowerCase() === "fake") {
+    ip = fakeIP();
+  } else {
+    ip = ipInput;
+  }
+
+  const check = (id) => document.getElementById(id).checked ? "✅" : "❌";
+
+  const text =
+`nickname: \`${nick}\`
+password: \`${pass}\`
+created: ${timestamp}
+ip: \`${ip}\`
+info:
+  2Fa [${check("2fa")}]
+  age verified [${check("age")}]
+  chat [${check("chat")}]
+  voice chat [${check("voice")}]
+  email [${check("email")}]
+  busy [${check("busy")}]`;
+
+  const out = document.getElementById("out");
+  out.value = text;
+
+  await navigator.clipboard.writeText(text);
+}
+</script>
+
+</body>
+</html>
