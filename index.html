@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>T3N Account Info Generator</title>
+<title>T3N Account Manager</title>
 
 <style>
 :root {
@@ -11,7 +11,6 @@
   --border: #22283a;
   --text: #e6e9f0;
   --accent: #00ff9c;
-  --accent-dim: #00c27a;
 }
 
 * {
@@ -32,8 +31,8 @@ body {
 .container {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px 26px 26px;
+  border-radius: 14px;
+  padding: 26px;
   width: 360px;
   box-shadow: 0 0 40px rgba(0,0,0,.6);
 }
@@ -41,13 +40,10 @@ body {
 h2 {
   margin: 0 0 16px;
   text-align: center;
-  font-weight: 600;
   letter-spacing: 1px;
 }
 
-input[type="text"],
-input:not([type]),
-button {
+input, button {
   width: 100%;
   background: #0c1020;
   color: var(--text);
@@ -64,21 +60,17 @@ input::placeholder {
 button {
   cursor: pointer;
   font-weight: 600;
-  transition: all .2s ease;
+  transition: .2s;
 }
 
 button.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  background: linear-gradient(135deg, #00ff9c, #00c27a);
   color: #00160d;
   border: none;
 }
 
 button.primary:hover {
   filter: brightness(1.1);
-}
-
-button.secondary:hover {
-  border-color: var(--accent);
 }
 
 .checks {
@@ -90,7 +82,6 @@ button.secondary:hover {
 
 label {
   font-size: 13px;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -118,11 +109,11 @@ textarea {
 <body>
 <div class="container">
 
-<h2>T3N Account Generator</h2>
+<h2>T3N Account Manager</h2>
 
 <input id="nick" placeholder="Nickname">
 <input id="pass" placeholder="Password">
-<input id="time" placeholder="Time HH:MM or D">
+<input id="date" placeholder="Date DD.MM.YY or empty">
 
 <div class="checks">
   <label><input type="checkbox" id="2fa">2FA</label>
@@ -134,39 +125,38 @@ textarea {
 </div>
 
 <button class="primary" onclick="generate()">Generate & Copy</button>
-<button class="secondary" onclick="location.href='HowToUse.html'">How to use?</button>
 
 <textarea id="out" readonly></textarea>
 
 </div>
 
 <script>
-function unixFromHHMM(hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return Math.floor(d.getTime() / 1000);
+function unixFromDDMMYY(str) {
+  const [d, m, y] = str.split(".").map(Number);
+  const year = y < 100 ? 2000 + y : y;
+  return Math.floor(new Date(year, m - 1, d).getTime() / 1000);
 }
 
 function generate() {
   const nick = document.getElementById("nick").value || "unknown";
   const pass = document.getElementById("pass").value || "********";
+  const dateInput = document.getElementById("date").value.trim();
 
-  let t = document.getElementById("time").value;
-  let timestamp;
-
-  if (!t || t.toLowerCase() === "d") {
-    timestamp = `<t:${Math.floor(Date.now()/1000)}:R>`;
+  let unix;
+  if (!dateInput) {
+    unix = Math.floor(Date.now() / 1000);
   } else {
-    timestamp = `<t:${unixFromHHMM(t)}:R>`;
+    unix = unixFromDDMMYY(dateInput);
   }
+
+  const timestamp = `<t:${unix}:R>`;
 
   const check = (id) =>
     document.getElementById(id).checked ? "✅" : "❌";
 
   const text =
 `nickname: \`${nick}\`
-password: ||\`${pass}\`||
+password: ||${pass}||
 created: ${timestamp}
 info:
   2FA [${check("2fa")}]
