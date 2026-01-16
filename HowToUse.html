@@ -2,59 +2,156 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>How To Use</title>
+<title>How to use — T3N Account Manager</title>
+
 <style>
-  body {
-    background: #0f0f0f;
-    color: #eaeaea;
-    font-family: monospace;
-    padding: 20px;
-    line-height: 1.6;
-  }
-  h2 {
-    color: #00ff9c;
-  }
-  button {
-    background: #1e1e1e;
-    color: #eaeaea;
-    border: 1px solid #333;
-    padding: 6px;
-    margin-top: 15px;
-    cursor: pointer;
-  }
+:root {
+  --bg: #0b0e14;
+  --card: #111520;
+  --border: #22283a;
+  --text: #e6e9f0;
+  --accent: #00ff9c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #141a2a, #07090f);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  max-width: 760px;
+  width: 100%;
+  padding: 32px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 0 40px rgba(0,0,0,.6);
+}
+
+h1 {
+  margin-top: 0;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+h2 {
+  margin-top: 26px;
+  font-size: 18px;
+}
+
+p {
+  line-height: 1.7;
+  color: #d6daea;
+}
+
+ul {
+  margin-left: 20px;
+}
+
+code {
+  background: #06080f;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  color: var(--accent);
+}
+
+button {
+  margin-top: 24px;
+  background: linear-gradient(135deg, #00ff9c, #00c27a);
+  color: #00160d;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
 </style>
 </head>
+
 <body>
+<div class="container">
+  <div class="card">
 
-<h2>How to use T3N Account Generator</h2>
+<h1>How to use T3N Account Manager</h1>
 
-<p><b>Nickname / Password</b><br>
-Enter any values you want.  
-If left empty, default values will be used.</p>
+<p>
+<b>T3N</b> is a lightweight <b>twink / alt account manager</b>.  
+It is designed to quickly generate, store and share structured information
+about multiple accounts without spreadsheets, notes chaos or memory gymnastics.
+</p>
 
-<p><b>Time</b></p>
+<p>
+The output format is optimized for copying into chats, logs or private notes.
+Everything is generated locally in your browser.
+</p>
+
+<h2>Nickname & Password</h2>
+<p>
+Enter any values you want.
+If a field is left empty, a safe placeholder will be used instead.
+This allows you to generate templates without exposing real credentials.
+</p>
+
+<h2>Time field</h2>
+<p>
+Controls the account creation timestamp using Discord-style formatting.
+</p>
 <ul>
-  <li><code>HH:MM</code> — specific time</li>
-  <li><code>D</code> or empty — current time</li>
+  <li><code>HH:MM</code> — generates a timestamp for today at the specified time</li>
+  <li><code>D</code> or empty — uses the current moment</li>
 </ul>
 
-<p><b>IP</b></p>
+<h2>Checkboxes</h2>
+<p>
+Each checkbox represents an account property or capability.
+When generating the output, they are converted into visual markers:
+</p>
 <ul>
-  <li><code>D</code> or empty — your real IP</li>
-  <li><code>fake</code> — random fake IP</li>
-  <li>or enter a custom IP manually</li>
+  <li>✅ — enabled / present</li>
+  <li>❌ — disabled / missing</li>
 </ul>
 
-<p><b>Checkboxes</b><br>
-Each checkbox adds either ✅ or ❌ to the generated info.</p>
+<p>
+This makes it easy to instantly scan multiple accounts and understand
+their status without reading walls of text.
+</p>
 
-<p><b>Generate & Copy button</b></p>
+<h2>Generate & Copy</h2>
 <ul>
-  <li>Generates the account info</li>
-  <li>Automatically copies it to clipboard</li>
+  <li>Builds the formatted account info block</li>
+  <li>Automatically copies it to your clipboard</li>
+  <li>No data is sent anywhere</li>
 </ul>
 
-<button onclick="location.href='index.html'">← Back</button>
+<h2>What this tool is for</h2>
+<ul>
+  <li>Managing multiple accounts (alts, test accounts, backups)</li>
+  <li>Keeping clean and consistent account notes</li>
+  <li>Quick sharing inside private chats or logs</li>
+</ul>
 
+<p>
+This tool intentionally avoids tracking, IP handling or external APIs.
+It does one thing and stays out of your business.
+</p>
+
+<button onclick="location.href='index.html'">← Back to generator</button>
+
+  </div>
+</div>
 </body>
 </html>
