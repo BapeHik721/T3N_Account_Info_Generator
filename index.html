@@ -3,56 +3,142 @@
 <head>
 <meta charset="UTF-8">
 <title>T3N Account Info Generator</title>
+
 <style>
-  body {
-    background: #0f0f0f;
-    color: #eaeaea;
-    font-family: monospace;
-    padding: 20px;
-  }
-  input, button {
-    background: #1e1e1e;
-    color: #eaeaea;
-    border: 1px solid #333;
-    padding: 6px;
-    margin: 4px 0;
-    width: 260px;
-  }
-  button {
-    cursor: pointer;
-    width: 270px;
-  }
-  textarea {
-    width: 100%;
-    height: 220px;
-    background: #111;
-    color: #00ff9c;
-    border: 1px solid #333;
-    margin-top: 10px;
-    padding: 10px;
-  }
+:root {
+  --bg: #0b0e14;
+  --card: #111520;
+  --border: #22283a;
+  --text: #e6e9f0;
+  --accent: #00ff9c;
+  --accent-dim: #00c27a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #141a2a, #07090f);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 26px 26px;
+  width: 360px;
+  box-shadow: 0 0 40px rgba(0,0,0,.6);
+}
+
+h2 {
+  margin: 0 0 16px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+input[type="text"],
+input:not([type]),
+button {
+  width: 100%;
+  background: #0c1020;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+input::placeholder {
+  color: #7a8199;
+}
+
+button {
+  cursor: pointer;
+  font-weight: 600;
+  transition: all .2s ease;
+}
+
+button.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  color: #00160d;
+  border: none;
+}
+
+button.primary:hover {
+  filter: brightness(1.1);
+}
+
+button.secondary:hover {
+  border-color: var(--accent);
+}
+
+.checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  margin: 10px 0 14px;
+}
+
+label {
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+textarea {
+  width: 100%;
+  height: 220px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #06080f;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  resize: none;
+  font-size: 13px;
+}
 </style>
 </head>
+
 <body>
+<div class="container">
 
 <h2>T3N Account Generator</h2>
 
-<input id="nick" placeholder="Nickname"><br>
-<input id="pass" placeholder="Password"><br>
-<input id="time" placeholder="Time HH:MM or D"><br>
-<!-- <input id="ip" placeholder="IP or D / fake"><br><br>  -->
+<input id="nick" placeholder="Nickname">
+<input id="pass" placeholder="Password">
+<input id="time" placeholder="Time HH:MM or D">
 
-<label><input type="checkbox" id="2fa"> 2FA</label><br>
-<label><input type="checkbox" id="age"> age verified</label><br>
-<label><input type="checkbox" id="chat"> chat</label><br>
-<label><input type="checkbox" id="voice"> voice chat</label><br>
-<label><input type="checkbox" id="email"> email</label><br>
-<label><input type="checkbox" id="busy"> busy</label><br><br>
+<div class="checks">
+  <label><input type="checkbox" id="2fa">2FA</label>
+  <label><input type="checkbox" id="age">age verified</label>
+  <label><input type="checkbox" id="chat">chat</label>
+  <label><input type="checkbox" id="voice">voice chat</label>
+  <label><input type="checkbox" id="email">email</label>
+  <label><input type="checkbox" id="busy">busy</label>
+</div>
 
-<button onclick="generate()">Generate & Copy</button><br>
-<button onclick="location.href='HowToUse.html'">How to use?</button>
+<button class="primary" onclick="generate()">Generate & Copy</button>
+<button class="secondary" onclick="location.href='HowToUse.html'">How to use?</button>
 
 <textarea id="out" readonly></textarea>
+
+</div>
 
 <script>
 function unixFromHHMM(hhmm) {
@@ -62,51 +148,28 @@ function unixFromHHMM(hhmm) {
   return Math.floor(d.getTime() / 1000);
 }
 
-function fakeIP() {
-  return Array.from({length:4}, () => Math.floor(Math.random()*254)+1).join(".");
-}
-
-async function getIP() {
-  try {
-    const r = await fetch("https://api.ipify.org?format=json");
-    const j = await r.json();
-    return j.ip;
-  } catch {
-    return "127.0.0.1";
-  }
-}
-
-async function generate() {
+function generate() {
   const nick = document.getElementById("nick").value || "unknown";
   const pass = document.getElementById("pass").value || "********";
 
   let t = document.getElementById("time").value;
   let timestamp;
+
   if (!t || t.toLowerCase() === "d") {
     timestamp = `<t:${Math.floor(Date.now()/1000)}:R>`;
   } else {
     timestamp = `<t:${unixFromHHMM(t)}:R>`;
   }
 
-  let ipInput = document.getElementById("ip").value;
-  let ip;
-  if (!ipInput || ipInput.toLowerCase() === "d") {
-    ip = await getIP();
-  } else if (ipInput.toLowerCase() === "fake") {
-    ip = fakeIP();
-  } else {
-    ip = ipInput;
-  }
-
-  const check = (id) => document.getElementById(id).checked ? "✅" : "❌";
+  const check = (id) =>
+    document.getElementById(id).checked ? "✅" : "❌";
 
   const text =
 `nickname: \`${nick}\`
 password: \`${pass}\`
 created: ${timestamp}
-ip: \`${ip}\`
 info:
-  2Fa [${check("2fa")}]
+  2FA [${check("2fa")}]
   age verified [${check("age")}]
   chat [${check("chat")}]
   voice chat [${check("voice")}]
@@ -115,8 +178,7 @@ info:
 
   const out = document.getElementById("out");
   out.value = text;
-
-  await navigator.clipboard.writeText(text);
+  navigator.clipboard.writeText(text);
 }
 </script>
 
