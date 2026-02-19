@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>T3N Account Manager</title>
-
 <style>
 :root {
   --bg: #0b0e14;
@@ -11,6 +10,7 @@
   --border: #22283a;
   --text: #e6e9f0;
   --accent: #00ff9c;
+  --spoiler-bg: #202225;
 }
 
 * { box-sizing: border-box; }
@@ -31,7 +31,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 26px;
-  width: 360px;
+  width: 380px;
   box-shadow: 0 0 40px rgba(0,0,0,.6);
 }
 
@@ -47,14 +47,13 @@ input, button {
   margin-bottom: 10px;
 }
 
-input::placeholder { color: #7a8199; }
-
-button { cursor: pointer; font-weight: 600; transition: .2s; }
-
 button.primary {
   background: linear-gradient(135deg, #00ff9c, #00c27a);
   color: #00160d;
   border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: .2s;
 }
 
 button.primary:hover { filter: brightness(1.1); }
@@ -66,54 +65,61 @@ button.primary:hover { filter: brightness(1.1); }
   margin: 10px 0 14px;
 }
 
-label {
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+label { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+/* Тот самый спойлер как в Дискорде */
+.discord-spoiler {
+  background: var(--spoiler-bg);
+  color: var(--spoiler-bg);
+  border-radius: 3px;
+  padding: 0 2px;
   cursor: pointer;
+  transition: color 0.1s;
 }
 
-input[type="checkbox"] { accent-color: var(--accent); }
+.discord-spoiler:hover, .discord-spoiler.revealed {
+  color: var(--text);
+  background: rgba(255,255,255,0.1);
+}
 
-textarea {
+#out {
   width: 100%;
-  height: 180px;
+  min-height: 180px;
   margin-top: 12px;
   padding: 12px;
   background: #06080f;
-  color: var(--accent);
+  color: var(--text);
   border: 1px solid var(--border);
   border-radius: 10px;
-  resize: none;
   font-size: 13px;
+  white-space: pre-wrap; /* Чтобы переносы строк работали */
+  overflow-y: auto;
 }
+
+code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
 </style>
 </head>
 
 <body>
 <div class="container">
+  <h2>T3N Manager</h2>
+  
+  <input id="nick" placeholder="Nickname">
+  <input id="pass" type="password" placeholder="Password">
+  <input id="date" placeholder="Date DD.MM.YY or empty">
 
-<h2>T3N Account Manager</h2>
+  <div class="checks">
+    <label><input type="checkbox" id="2fa">2FA</label>
+    <label><input type="checkbox" id="age">age verified</label>
+    <label><input type="checkbox" id="chat">chat</label>
+    <label><input type="checkbox" id="voice">voice chat</label>
+    <label><input type="checkbox" id="email">email</label>
+    <label><input type="checkbox" id="busy">busy</label>
+  </div>
 
-<input id="nick" placeholder="Nickname">
-<input id="pass" type="password" placeholder="Password">
-<input id="date" placeholder="Date DD.MM.YY or empty">
+  <button class="primary" onclick="generate()">Generate & Copy</button>
 
-<div class="checks">
-  <label><input type="checkbox" id="isSpoiler" checked>spoiler</label>
-  <label><input type="checkbox" id="2fa">2FA</label>
-  <label><input type="checkbox" id="age">age verified</label>
-  <label><input type="checkbox" id="chat">chat</label>
-  <label><input type="checkbox" id="voice">voice chat</label>
-  <label><input type="checkbox" id="email">email</label>
-  <label><input type="checkbox" id="busy">busy</label>
-</div>
-
-<button class="primary" onclick="generate()">Generate & Copy</button>
-
-<textarea id="out" readonly></textarea>
-
+  <div id="out">Тут будет результат...</div>
 </div>
 
 <script>
@@ -128,25 +134,23 @@ function generate() {
   const pass = document.getElementById("pass").value || "********";
   const dateInput = document.getElementById("date").value.trim();
   
-  const isSpoiler = document.getElementById("isSpoiler").checked;
-  const formattedPass = isSpoiler ? `||${pass}||` : `\`${pass}\``;
-
-  let unix;
-  if (!dateInput) {
-    unix = Math.floor(Date.now() / 1000);
-  } else {
-    try {
-        unix = unixFromDDMMYY(dateInput) || Math.floor(Date.now() / 1000);
-    } catch(e) {
-        unix = Math.floor(Date.now() / 1000);
-    }
-  }
-
+  let unix = !dateInput ? Math.floor(Date.now() / 1000) : (unixFromDDMMYY(dateInput) || Math.floor(Date.now() / 1000));
   const timestamp = `<t:${unix}:R>`;
   const check = (id) => document.getElementById(id).checked ? "✅" : "❌";
 
-  const text = `nickname: \`${nick}\`
-password: ${formattedPass}
+  const plainText = `nickname: \`${nick}\`
+password: ||${pass}||
+created: ${timestamp}
+info:
+  2FA [${check("2fa")}]
+  age verified [${check("age")}]
+  chat [${check("chat")}]
+  voice chat [${check("voice")}]
+  email [${check("email")}]
+  busy [${check("busy")}]`;
+
+  const htmlView = `nickname: <code>${nick}</code>
+password: <span class="discord-spoiler" onclick="this.classList.toggle('revealed')">${pass}</span>
 created: ${timestamp}
 info:
   2FA [${check("2fa")}]
@@ -157,14 +161,11 @@ info:
   busy [${check("busy")}]`;
 
   const out = document.getElementById("out");
-  out.value = text;
+  out.innerHTML = htmlView;
   
-  // Копируем в буфер
-  navigator.clipboard.writeText(text).then(() => {
-      console.log('Copied!');
-  });
+  // Копируем именно текст с || в буфер
+  navigator.clipboard.writeText(plainText);
 }
 </script>
-
 </body>
 </html>
