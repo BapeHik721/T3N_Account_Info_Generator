@@ -10,6 +10,7 @@
   --border: #22283a;
   --text: #e6e9f0;
   --accent: #00ff9c;
+  --ds-bg: #32353b; /* Цвет плашки времени в ДС */
 }
 
 * { box-sizing: border-box; }
@@ -30,7 +31,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 26px;
-  width: 380px;
+  width: 400px;
   box-shadow: 0 0 40px rgba(0,0,0,.6);
 }
 
@@ -45,8 +46,6 @@ input, button {
   padding: 10px 12px;
   margin-bottom: 10px;
 }
-
-input::placeholder { color: #7a8199; }
 
 button.primary {
   background: linear-gradient(135deg, #00ff9c, #00c27a);
@@ -68,10 +67,9 @@ button.primary:hover { filter: brightness(1.1); }
 
 label { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
 
-/* Стилизация вывода под Textarea */
 #out {
   width: 100%;
-  height: 200px;
+  min-height: 200px;
   margin-top: 12px;
   padding: 12px;
   background: #06080f;
@@ -80,8 +78,7 @@ label { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: p
   border-radius: 10px;
   font-size: 13px;
   white-space: pre-wrap;
-  overflow-y: auto;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* Дискорд спойлер */
@@ -90,11 +87,19 @@ label { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: p
   color: #2f3136;
   border-radius: 3px;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 0 4px;
 }
-.ds-spoiler.revealed {
-  background: rgba(255,255,255,0.1);
-  color: inherit;
+.ds-spoiler.revealed { background: rgba(255,255,255,0.1); color: inherit; }
+
+/* Дискорд таймстамп */
+.ds-timestamp {
+  background: var(--ds-bg);
+  color: #dee0e3;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-family: sans-serif;
+  font-size: 0.9em;
+  cursor: default;
 }
 
 code { background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; }
@@ -112,15 +117,15 @@ code { background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; 
   <div class="checks">
     <label><input type="checkbox" id="2fa">2FA</label>
     <label><input type="checkbox" id="age">age verified</label>
-    <label><input type="checkbox" id="chat">chat</label>
-    <label><input type="checkbox" id="voice">voice chat</label>
-    <label><input type="checkbox" id="email">email</label>
-    <label><input type="checkbox" id="busy">busy</label>
+    <label><input id="chat" type="checkbox">chat</label>
+    <label><input id="voice" type="checkbox">voice chat</label>
+    <label><input id="email" type="checkbox">email</label>
+    <label><input id="busy" type="checkbox">busy</label>
   </div>
 
   <button class="primary" onclick="generate()">Generate & Copy</button>
 
-  <div id="out">Ожидание данных...</div>
+  <div id="out">...</div>
 </div>
 
 <script>
@@ -130,19 +135,29 @@ function unixFromDDMMYY(str) {
   return Math.floor(new Date(year, m - 1, d).getTime() / 1000);
 }
 
+// Функция для красивого отображения времени в стиле "R" (Relative)
+function getRelativeTime(unix) {
+  const diff = Math.floor(Date.now() / 1000) - unix;
+  if (Math.abs(diff) < 60) return "только что";
+  if (Math.abs(diff) < 3600) return `${Math.floor(Math.abs(diff)/60)} мин. назад`;
+  if (Math.abs(diff) < 86400) return `${Math.floor(Math.abs(diff)/3600)} ч. назад`;
+  return new Date(unix * 1000).toLocaleDateString('ru-RU');
+}
+
 function generate() {
   const nick = document.getElementById("nick").value || "unknown";
   const pass = document.getElementById("pass").value || "********";
   const dateInput = document.getElementById("date").value.trim();
   
   let unix = !dateInput ? Math.floor(Date.now() / 1000) : (unixFromDDMMYY(dateInput) || Math.floor(Date.now() / 1000));
-  const timestamp = `<t:${unix}:R>`;
+  const discordTag = `<t:${unix}:R>`;
+  const relativeView = getRelativeTime(unix);
+  
   const check = (id) => document.getElementById(id).checked ? "✅" : "❌";
 
-  // Это пойдет в буфер обмена (стандартный формат)
   const copyText = `nickname: \`${nick}\`
 password: ||${pass}||
-created: ${timestamp}
+created: ${discordTag}
 info:
   2FA [${check("2fa")}]
   age verified [${check("age")}]
@@ -151,10 +166,9 @@ info:
   email [${check("email")}]
   busy [${check("busy")}]`;
 
-  // Это отображается в "псевдо-текстареа"
   const viewHtml = `nickname: <code>${nick}</code>
 password: <span class="ds-spoiler" onclick="this.classList.toggle('revealed')">${pass}</span>
-created: ${timestamp}
+created: <span class="ds-timestamp" title="${new Date(unix*1000).toLocaleString()}">${relativeView}</span>
 info:
   2FA [${check("2fa")}]
   age verified [${check("age")}]
@@ -163,10 +177,7 @@ info:
   email [${check("email")}]
   busy [${check("busy")}]`;
 
-  const out = document.getElementById("out");
-  out.innerHTML = viewHtml;
-  
-  // Магия копирования
+  document.getElementById("out").innerHTML = viewHtml;
   navigator.clipboard.writeText(copyText);
 }
 </script>
