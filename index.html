@@ -10,7 +10,6 @@
   --border: #22283a;
   --text: #e6e9f0;
   --accent: #00ff9c;
-  --spoiler-bg: #202225;
 }
 
 * { box-sizing: border-box; }
@@ -47,6 +46,8 @@ input, button {
   margin-bottom: 10px;
 }
 
+input::placeholder { color: #7a8199; }
+
 button.primary {
   background: linear-gradient(135deg, #00ff9c, #00c27a);
   color: #00160d;
@@ -67,24 +68,10 @@ button.primary:hover { filter: brightness(1.1); }
 
 label { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
 
-/* Тот самый спойлер как в Дискорде */
-.discord-spoiler {
-  background: var(--spoiler-bg);
-  color: var(--spoiler-bg);
-  border-radius: 3px;
-  padding: 0 2px;
-  cursor: pointer;
-  transition: color 0.1s;
-}
-
-.discord-spoiler:hover, .discord-spoiler.revealed {
-  color: var(--text);
-  background: rgba(255,255,255,0.1);
-}
-
+/* Стилизация вывода под Textarea */
 #out {
   width: 100%;
-  min-height: 180px;
+  height: 200px;
   margin-top: 12px;
   padding: 12px;
   background: #06080f;
@@ -92,11 +79,25 @@ label { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: p
   border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 13px;
-  white-space: pre-wrap; /* Чтобы переносы строк работали */
+  white-space: pre-wrap;
   overflow-y: auto;
+  line-height: 1.5;
 }
 
-code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
+/* Дискорд спойлер */
+.ds-spoiler {
+  background: #2f3136;
+  color: #2f3136;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.ds-spoiler.revealed {
+  background: rgba(255,255,255,0.1);
+  color: inherit;
+}
+
+code { background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; }
 </style>
 </head>
 
@@ -119,7 +120,7 @@ code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; 
 
   <button class="primary" onclick="generate()">Generate & Copy</button>
 
-  <div id="out">Тут будет результат...</div>
+  <div id="out">Ожидание данных...</div>
 </div>
 
 <script>
@@ -138,7 +139,8 @@ function generate() {
   const timestamp = `<t:${unix}:R>`;
   const check = (id) => document.getElementById(id).checked ? "✅" : "❌";
 
-  const plainText = `nickname: \`${nick}\`
+  // Это пойдет в буфер обмена (стандартный формат)
+  const copyText = `nickname: \`${nick}\`
 password: ||${pass}||
 created: ${timestamp}
 info:
@@ -149,8 +151,9 @@ info:
   email [${check("email")}]
   busy [${check("busy")}]`;
 
-  const htmlView = `nickname: <code>${nick}</code>
-password: <span class="discord-spoiler" onclick="this.classList.toggle('revealed')">${pass}</span>
+  // Это отображается в "псевдо-текстареа"
+  const viewHtml = `nickname: <code>${nick}</code>
+password: <span class="ds-spoiler" onclick="this.classList.toggle('revealed')">${pass}</span>
 created: ${timestamp}
 info:
   2FA [${check("2fa")}]
@@ -161,10 +164,10 @@ info:
   busy [${check("busy")}]`;
 
   const out = document.getElementById("out");
-  out.innerHTML = htmlView;
+  out.innerHTML = viewHtml;
   
-  // Копируем именно текст с || в буфер
-  navigator.clipboard.writeText(plainText);
+  // Магия копирования
+  navigator.clipboard.writeText(copyText);
 }
 </script>
 </body>
