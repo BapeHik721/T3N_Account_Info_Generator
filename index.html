@@ -2,184 +2,245 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>T3N Account Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T3N Next-Gen Manager</title>
 <style>
 :root {
-  --bg: #0b0e14;
-  --card: #111520;
-  --border: #22283a;
-  --text: #e6e9f0;
-  --accent: #00ff9c;
-  --ds-bg: #32353b; /* Цвет плашки времени в ДС */
+  --bg: #05070a;
+  --card: #0d1117;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --accent: #7efaff; /* Неоновый голубой, потому что мы в будущем */
+  --danger: #ff4b4b;
+  --success: #00ff9c;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; transition: all 0.2s ease; }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top, #141a2a, #07090f);
+  background: var(--bg);
   color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
   display: flex;
-  align-items: center;
+  padding: 20px;
+  gap: 20px;
   justify-content: center;
 }
 
 .container {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 26px;
-  width: 400px;
-  box-shadow: 0 0 40px rgba(0,0,0,.6);
+  border-radius: 16px;
+  padding: 24px;
+  width: 420px;
+  height: fit-content;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.8);
 }
 
-h2 { margin: 0 0 16px; text-align: center; letter-spacing: 1px; }
+h2 { 
+    margin: 0 0 20px; 
+    text-align: center; 
+    text-transform: uppercase; 
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-shadow: 0 0 10px rgba(126, 250, 255, 0.3);
+}
 
-input, button {
+.input-group { position: relative; margin-bottom: 12px; }
+
+input {
   width: 100%;
-  background: #0c1020;
+  background: #161b22;
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
+  padding: 12px;
+  outline: none;
+}
+
+input:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(126, 250, 255, 0.2); }
+
+.gen-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--border);
+    border: none;
+    color: var(--accent);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
 }
 
 button.primary {
-  background: linear-gradient(135deg, #00ff9c, #00c27a);
-  color: #00160d;
+  width: 100%;
+  background: var(--accent);
+  color: #000;
   border: none;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 10px;
   cursor: pointer;
-  font-weight: 600;
-  transition: .2s;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
-button.primary:hover { filter: brightness(1.1); }
+button.primary:hover { transform: scale(1.02); filter: brightness(1.1); }
 
 .checks {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 12px;
-  margin: 10px 0 14px;
+  gap: 10px;
+  margin: 15px 0;
+  background: #161b22;
+  padding: 12px;
+  border-radius: 10px;
 }
 
-label { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+label { font-size: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+#history {
+    width: 350px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.history-item {
+    font-size: 11px;
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.history-item:hover { background: #161b22; }
 
 #out {
-  width: 100%;
-  min-height: 200px;
-  margin-top: 12px;
-  padding: 12px;
-  background: #06080f;
-  color: var(--text);
-  border: 1px solid var(--border);
+  margin-top: 20px;
+  padding: 15px;
+  background: #000;
+  border: 1px dashed var(--accent);
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12px;
   white-space: pre-wrap;
-  line-height: 1.6;
 }
 
-/* Дискорд спойлер */
-.ds-spoiler {
-  background: #2f3136;
-  color: #2f3136;
-  border-radius: 3px;
-  cursor: pointer;
-  padding: 0 4px;
-}
+.ds-spoiler { background: #4f545c; color: #4f545c; border-radius: 3px; padding: 0 4px; cursor: pointer; }
 .ds-spoiler.revealed { background: rgba(255,255,255,0.1); color: inherit; }
-
-/* Дискорд таймстамп */
-.ds-timestamp {
-  background: var(--ds-bg);
-  color: #dee0e3;
-  padding: 0 4px;
-  border-radius: 3px;
-  font-family: sans-serif;
-  font-size: 0.9em;
-  cursor: default;
-}
-
-code { background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; }
 </style>
 </head>
-
 <body>
-<div class="container">
-  <h2>T3N Manager</h2>
-  
-  <input id="nick" placeholder="Nickname">
-  <input id="pass" type="password" placeholder="Password">
-  <input id="date" placeholder="Date DD.MM.YY or empty">
 
-  <div class="checks">
-    <label><input type="checkbox" id="2fa">2FA</label>
-    <label><input type="checkbox" id="age">age verified</label>
-    <label><input id="chat" type="checkbox">chat</label>
-    <label><input id="voice" type="checkbox">voice chat</label>
-    <label><input id="email" type="checkbox">email</label>
-    <label><input id="busy" type="checkbox">busy</label>
+<div class="container">
+  <h2>T3N Phase 2</h2>
+  
+  <div class="input-group">
+    <input id="nick" placeholder="Nickname">
+    <button class="gen-btn" onclick="randomNick()">RAND</button>
+  </div>
+  
+  <div class="input-group">
+    <input id="pass" type="text" placeholder="Password">
+    <button class="gen-btn" onclick="randomPass()">GEN</button>
   </div>
 
-  <button class="primary" onclick="generate()">Generate & Copy</button>
+  <input id="date" placeholder="Date (empty = now)">
 
-  <div id="out">...</div>
+  <div class="checks">
+    <label><input type="checkbox" id="2fa"> 2FA</label>
+    <label><input type="checkbox" id="age"> Verified</label>
+    <label><input type="checkbox" id="chat"> Chat</label>
+    <label><input type="checkbox" id="voice"> Voice</label>
+    <label><input type="checkbox" id="email"> Email</label>
+    <label><input type="checkbox" id="busy"> Busy</label>
+  </div>
+
+  <button class="primary" onclick="generate()">Execute & Copy</button>
+
+  <div id="out">System ready...</div>
+</div>
+
+<div id="history">
+    <h3 style="margin-top:0; font-size: 14px; color: var(--accent);">Recent Logs</h3>
+    <div id="hist-list"></div>
 </div>
 
 <script>
+// Авто-генерация всякого мусора
+const randomNick = () => {
+    const names = ["Shadow", "Vortex", "Cyber", "Ghost", "Zero", "Neon", "Void"];
+    document.getElementById("nick").value = names[Math.floor(Math.random()*names.length)] + Math.floor(Math.random()*9999);
+};
+
+const randomPass = () => {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let retVal = "";
+    for (let i = 0; i < 12; ++i) retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+    document.getElementById("pass").value = retVal;
+};
+
+// Хранилище
+let logs = JSON.parse(localStorage.getItem('t3n_logs') || '[]');
+
+function updateHistory() {
+    const list = document.getElementById("hist-list");
+    list.innerHTML = logs.map((log, i) => `
+        <div class="history-item" onclick="loadLog(${i})">
+            [${log.time}] ${log.nick}
+        </div>
+    `).reverse().join('');
+}
+
+function loadLog(i) {
+    const log = logs[i];
+    document.getElementById("nick").value = log.nick;
+    document.getElementById("pass").value = log.pass;
+    // ... можно дописать восстановление чекбоксов, если не лень
+}
+
 function unixFromDDMMYY(str) {
+  if(!str) return Math.floor(Date.now() / 1000);
   const [d, m, y] = str.split(".").map(Number);
   const year = y < 100 ? 2000 + y : y;
   return Math.floor(new Date(year, m - 1, d).getTime() / 1000);
 }
 
-// Функция для красивого отображения времени в стиле "R" (Relative)
-function getRelativeTime(unix) {
-  const diff = Math.floor(Date.now() / 1000) - unix;
-  if (Math.abs(diff) < 60) return "только что";
-  if (Math.abs(diff) < 3600) return `${Math.floor(Math.abs(diff)/60)} мин. назад`;
-  if (Math.abs(diff) < 86400) return `${Math.floor(Math.abs(diff)/3600)} ч. назад`;
-  return new Date(unix * 1000).toLocaleDateString('ru-RU');
-}
-
 function generate() {
-  const nick = document.getElementById("nick").value || "unknown";
-  const pass = document.getElementById("pass").value || "********";
-  const dateInput = document.getElementById("date").value.trim();
-  
-  let unix = !dateInput ? Math.floor(Date.now() / 1000) : (unixFromDDMMYY(dateInput) || Math.floor(Date.now() / 1000));
-  const discordTag = `<t:${unix}:R>`;
-  const relativeView = getRelativeTime(unix);
+  const nick = document.getElementById("nick").value || "empty_user";
+  const pass = document.getElementById("pass").value || "no_pass";
+  const dateVal = document.getElementById("date").value;
+  const unix = unixFromDDMMYY(dateVal);
   
   const check = (id) => document.getElementById(id).checked ? "✅" : "❌";
 
-  const copyText = `nickname: \`${nick}\`
+  const template = `nickname: \`${nick}\`
 password: ||${pass}||
-created: ${discordTag}
+created: <t:${unix}:R>
 info:
-  2FA [${check("2fa")}]
-  age verified [${check("age")}]
-  chat [${check("chat")}]
-  voice chat [${check("voice")}]
-  email [${check("email")}]
-  busy [${check("busy")}]`;
+  2FA [${check("2fa")}] | Age [${check("age")}] | Voice [${check("voice")}]
+  Chat [${check("chat")}] | Mail [${check("email")}] | Busy [${check("busy")}]`;
 
-  const viewHtml = `nickname: <code>${nick}</code>
-password: <span class="ds-spoiler" onclick="this.classList.toggle('revealed')">${pass}</span>
-created: <span class="ds-timestamp" title="${new Date(unix*1000).toLocaleString()}">${relativeView}</span>
-info:
-  2FA [${check("2fa")}]
-  age verified [${check("age")}]
-  chat [${check("chat")}]
-  voice chat [${check("voice")}]
-  email [${check("email")}]
-  busy [${check("busy")}]`;
+  // Рендерим в превью
+  document.getElementById("out").innerHTML = template.replace(/\|\|(.*?)\|\|/g, '<span class="ds-spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>');
+  
+  // Копируем
+  navigator.clipboard.writeText(template);
 
-  document.getElementById("out").innerHTML = viewHtml;
-  navigator.clipboard.writeText(copyText);
+  // Сохраняем в историю
+  logs.push({ nick, pass, time: new Date().toLocaleTimeString() });
+  if(logs.length > 20) logs.shift();
+  localStorage.setItem('t3n_logs', JSON.stringify(logs));
+  updateHistory();
 }
+
+updateHistory();
 </script>
 </body>
 </html>
