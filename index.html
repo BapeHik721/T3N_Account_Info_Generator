@@ -24,42 +24,58 @@
         .container { width: 420px; height: fit-content; }
         #history { width: 350px; max-height: 85vh; display: flex; flex-direction: column; }
         h2 { margin: 0 0 15px; text-align: center; color: var(--accent); letter-spacing: 3px; }
+        
         .db-status {
             text-align: center; font-size: 10px; margin-bottom: 20px;
             padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.05);
             cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
         }
+
         .input-group { position: relative; margin-bottom: 12px; }
         input {
             width: 100%; background: #161b22; color: var(--text);
             border: 1px solid var(--border); border-radius: 8px; padding: 12px; outline: none;
         }
         input:focus { border-color: var(--accent); }
+        
         .gen-btn {
             position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
             background: var(--border); border: none; color: var(--accent);
             padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px;
         }
+
         button.primary {
             width: 100%; background: var(--accent); color: #000; border: none;
             border-radius: 8px; padding: 14px; margin-top: 10px;
             cursor: pointer; font-weight: 800; text-transform: uppercase;
         }
+
         .checks {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
             margin: 15px 0; background: #161b22; padding: 12px; border-radius: 10px;
         }
         label { font-size: 11px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+        /* Output Wrapper */
+        .out-header { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 5px; }
+        .out-header span { font-size: 10px; color: var(--accent); font-weight: bold; }
+        .copy-badge { 
+            background: var(--border); color: var(--accent); font-size: 9px; 
+            padding: 2px 8px; border-radius: 4px; cursor: pointer; border: 1px solid var(--accent);
+        }
+        .copy-badge:hover { background: var(--accent); color: #000; }
+
+        #out {
+            padding: 15px; background: #000;
+            border: 1px dashed var(--accent); border-radius: 10px;
+            font-size: 12px; white-space: pre-wrap; min-height: 100px;
+        }
+
         .history-item {
             font-size: 11px; padding: 12px; border-bottom: 1px solid var(--border);
             cursor: pointer; display: flex; justify-content: space-between;
         }
         .history-item:hover { background: #161b22; color: var(--accent); }
-        #out {
-            margin-top: 20px; padding: 15px; background: #000;
-            border: 1px dashed var(--accent); border-radius: 10px;
-            font-size: 12px; white-space: pre-wrap; min-height: 100px;
-        }
         .ds-spoiler { background: #4f545c; color: #4f545c; border-radius: 3px; padding: 0 4px; cursor: pointer; }
         .ds-spoiler.revealed { background: rgba(255,255,255,0.1); color: inherit; }
     </style>
@@ -91,7 +107,12 @@
         <label><input type="checkbox" id="busy"> Busy</label>
     </div>
 
-    <button class="primary" id="btn-main">Execute & Copy</button>
+    <button class="primary" id="btn-main">Generate Log</button>
+
+    <div class="out-header">
+        <span>PREVIEW</span>
+        <div class="copy-badge" id="btn-copy">COPY FOR DS</div>
+    </div>
     <div id="out">waiting for data...</div>
 </div>
 
@@ -101,17 +122,33 @@
 </div>
 
 <script>
-// --- Конфиг ---
 const checkIds = ["2fa", "age", "chat", "voice", "email", "busy"];
 let logs = [];
 let fileSha = "";
+let currentTemplate = "";
 
-// Настройки из LocalStorage
+// Настройки
 let GH_TOKEN = localStorage.getItem('gh_token');
 let REPO = localStorage.getItem('gh_repo'); 
-let DB_NAME = localStorage.getItem('gh_db_name') || "db"; // Имя файла (без .json)
+let DB_NAME = localStorage.getItem('gh_db_name') || "db";
 let MASTER_PASS = localStorage.getItem('master_pass');
-let FILE_PATH = `${DB_NAME}.json`; // Формируем путь
+let FILE_PATH = `${DB_NAME}.json`;
+
+// --- Helpers ---
+const unixFromDDMMYY = (str) => {
+    if(!str || !str.trim().includes('.')) return Math.floor(Date.now() / 1000);
+    try {
+        const parts = str.split(".");
+        if(parts.length < 2) return Math.floor(Date.now() / 1000);
+        const d = parseInt(parts[0]);
+        const m = parseInt(parts[1]) - 1;
+        let y = parseInt(parts[2]);
+        if (isNaN(y)) y = new Date().getFullYear();
+        else if (y < 100) y += 2000;
+        const dateObj = new Date(y, m, d);
+        return isNaN(dateObj.getTime()) ? Math.floor(Date.now() / 1000) : Math.floor(dateObj.getTime() / 1000);
+    } catch(e) { return Math.floor(Date.now() / 1000); }
+};
 
 // --- GitHub API ---
 async function ghRequest(method, body = null) {
@@ -127,7 +164,6 @@ async function ghRequest(method, body = null) {
     return res.json();
 }
 
-// --- Crypto ---
 const encrypt = (data, pass) => CryptoJS.AES.encrypt(JSON.stringify(data), pass).toString();
 const decrypt = (cipher, pass) => {
     try {
@@ -137,56 +173,36 @@ const decrypt = (cipher, pass) => {
     } catch(e) { return null; }
 };
 
-// --- Core ---
 async function initDB() {
     if (!GH_TOKEN || !REPO || !MASTER_PASS) return;
-
     try {
         const data = await ghRequest('GET');
         fileSha = data.sha;
-        
         const rawContent = decodeURIComponent(escape(atob(data.content)));
-
         if (rawContent === "[]") {
             logs = [];
             updateHistoryUI();
-            setStatus(`CONNECTED (${DB_NAME})`, "success");
+            setStatus(`CONNECTED`, "success");
             return;
         }
-
         let encryptedData;
-        try {
-            encryptedData = JSON.parse(rawContent);
-        } catch(e) {
-            encryptedData = rawContent;
-        }
-
+        try { encryptedData = JSON.parse(rawContent); } catch(e) { encryptedData = rawContent; }
         const decrypted = decrypt(encryptedData, MASTER_PASS);
-
         if (decrypted) {
             logs = decrypted;
             updateHistoryUI();
-            setStatus(`CONNECTED (${DB_NAME})`, "success");
-        } else {
-            setStatus("WRONG MASTER PASS", "danger");
-        }
+            setStatus(`CONNECTED`, "success");
+        } else { setStatus("WRONG PASS", "danger"); }
     } catch (e) {
-        console.error(e);
-        if(e.message === "404") {
-            setStatus("FILE NOT FOUND (CREATE IT!)", "danger");
-        } else {
-            setStatus("CONNECTION ERROR", "danger");
-        }
+        if(e.message === "404") setStatus("404: NO FILE", "danger");
+        else setStatus("GH ERROR", "danger");
     }
 }
 
 async function syncToCloud() {
-    if (!fileSha) return;
-    setStatus("SYNCING...", "warning");
-    
+    if (!fileSha || !GH_TOKEN) return;
     const cipher = encrypt(logs, MASTER_PASS);
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(cipher))));
-
     try {
         const res = await ghRequest('PUT', {
             message: `update ${DB_NAME}`,
@@ -194,19 +210,14 @@ async function syncToCloud() {
             sha: fileSha
         });
         fileSha = res.content.sha;
-        setStatus("SYNCED", "success");
-    } catch (e) {
-        setStatus("SYNC ERROR", "danger");
-    }
+    } catch (e) { console.error("Sync error"); }
 }
 
 function setStatus(text, type) {
-    const dot = document.getElementById('db-dot');
     document.getElementById('db-text').innerText = text;
-    dot.innerText = type === 'success' ? '🟢' : type === 'warning' ? '🟡' : '🔴';
+    document.getElementById('db-dot').innerText = type === 'success' ? '🟢' : type === 'warning' ? '🟡' : '🔴';
 }
 
-// --- UI Helpers ---
 function updateHistoryUI() {
     const list = document.getElementById("hist-list");
     list.innerHTML = logs.length ? logs.map((log, i) => `
@@ -225,11 +236,11 @@ function loadLog(i) {
     checkIds.forEach(id => document.getElementById(id).checked = !!(log.settings && log.settings[id]));
 }
 
-// --- Main Action ---
 async function generate() {
     const nick = document.getElementById("nick").value || "ghost";
     const pass = document.getElementById("pass").value || "pass";
     const dateVal = document.getElementById("date").value;
+    const unix = unixFromDDMMYY(dateVal);
     
     const settings = {};
     const checkState = (id) => {
@@ -238,23 +249,28 @@ async function generate() {
         return isChecked ? "✅" : "❌";
     };
 
-    const template = `nickname: \`${nick}\`\npassword: ||${pass}||\ncreated: <t:${unixFromDDMMYY(dateVal)}:R>\ninfo:\n 2FA [${checkState("2fa")}] | Age [${checkState("age")}] | Voice [${checkState("voice")}]\n Chat [${checkState("chat")}] | Mail [${checkState("email")}] | Busy [${checkState("busy")}]`;
+    currentTemplate = `nickname: \`${nick}\`\npassword: ||${pass}||\ncreated: <t:${unix}:R>\ninfo:\n 2FA [${checkState("2fa")}] | Age [${checkState("age")}] | Voice [${checkState("voice")}]\n Chat [${checkState("chat")}] | Mail [${checkState("email")}] | Busy [${checkState("busy")}]`;
 
-    document.getElementById("out").innerHTML = template.replace(/\|\|(.*?)\|\|/g, '<span class="ds-spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>');
-    navigator.clipboard.writeText(template);
-
+    document.getElementById("out").innerHTML = currentTemplate.replace(/\|\|(.*?)\|\|/g, '<span class="ds-spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>');
+    
     logs.push({ nick, pass, date: dateVal, settings, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
     updateHistoryUI();
     await syncToCloud();
 }
 
-// Настройка через промпты
+document.getElementById("btn-copy").onclick = () => {
+    if(!currentTemplate) return;
+    navigator.clipboard.writeText(currentTemplate);
+    const btn = document.getElementById("btn-copy");
+    btn.innerText = "COPIED!";
+    setTimeout(() => btn.innerText = "COPY FOR DS", 1500);
+};
+
 document.getElementById('db-setup-btn').onclick = () => {
     const t = prompt("GitHub Token:", GH_TOKEN || "");
     const r = prompt("Repo (user/repo):", REPO || "");
-    const n = prompt("DB Name (filename without .json):", DB_NAME || "db");
+    const n = prompt("DB Name:", DB_NAME || "db");
     const p = prompt("Master Password:", MASTER_PASS || "");
-    
     if (t && r && n && p) {
         localStorage.setItem('gh_token', t);
         localStorage.setItem('gh_repo', r);
@@ -264,15 +280,9 @@ document.getElementById('db-setup-btn').onclick = () => {
     }
 };
 
-const unixFromDDMMYY = (str) => {
-    if(!str || !str.includes('.')) return Math.floor(Date.now() / 1000);
-    const [d, m, y] = str.split(".").map(Number);
-    return Math.floor(new Date(y < 100 ? 2000 + y : y, m - 1, d).getTime() / 1000);
-};
-
 document.getElementById("btn-rand-nick").onclick = () => {
-    const adj = ["Cyber", "Dark", "Neon", "Null", "Solar"];
-    const nouns = ["Daemon", "Shell", "Kernel", "User", "Link"];
+    const adj = ["Cyber", "Dark", "Neon", "Null", "Solar", "Void", "Acid"];
+    const nouns = ["Daemon", "Shell", "Kernel", "User", "Link", "Ghost", "Zero"];
     document.getElementById("nick").value = adj[Math.floor(Math.random()*adj.length)] + nouns[Math.floor(Math.random()*nouns.length)] + Math.floor(Math.random()*99);
 };
 
@@ -282,7 +292,6 @@ document.getElementById("btn-rand-pass").onclick = () => {
 
 document.getElementById("btn-main").onclick = generate;
 
-// Start
 initDB();
 </script>
 </body>
