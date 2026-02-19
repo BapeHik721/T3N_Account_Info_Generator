@@ -138,26 +138,46 @@ const decrypt = (cipher, pass) => {
 
 // --- Core ---
 async function initDB() {
-    if (!GH_TOKEN || !REPO || !MASTER_PASS) {
-        setStatus("SETUP REQUIRED", "warning");
-        return;
-    }
+    if (!GH_TOKEN || !REPO || !MASTER_PASS) return;
 
     try {
         const data = await ghRequest('GET');
         fileSha = data.sha;
-        const encryptedContent = atob(data.content);
-        const decrypted = decrypt(encryptedContent, MASTER_PASS);
+        
+        // 1. Декодируем из Base64 гитхаба в обычный текст
+        const rawContent = decodeURIComponent(escape(atob(data.content)));
+
+        // 2. Если файл пустой [], создаем пустой массив
+        if (rawContent === "[]") {
+            logs = [];
+            updateHistoryUI();
+            setStatus("CONNECTED (EMPTY)", "success");
+            return;
+        }
+
+        // 3. Пытаемся распарсить как строку (убираем лишние кавычки из файла)
+        let encryptedData;
+        try {
+            encryptedData = JSON.parse(rawContent);
+        } catch(e) {
+            // Если в файле лежит каша БЕЗ кавычек (старый формат), берем её как есть
+            encryptedData = rawContent;
+        }
+
+        // 4. Дешифруем
+        const decrypted = decrypt(encryptedData, MASTER_PASS);
 
         if (decrypted) {
             logs = decrypted;
             updateHistoryUI();
-            setStatus("CONNECTED & DECRYPTED", "success");
+            setStatus("CONNECTED", "success");
         } else {
+            // Если дешифровка выдала null - значит либо пароль не тот, либо каша битая
             setStatus("WRONG MASTER PASS", "danger");
         }
     } catch (e) {
-        setStatus("CONNECTION ERROR (404?)", "danger");
+        console.error(e);
+        setStatus("CONNECTION ERROR", "danger");
     }
 }
 
