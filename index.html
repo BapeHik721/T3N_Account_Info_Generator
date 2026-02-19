@@ -139,7 +139,7 @@ label { font-size: 12px; display: flex; align-items: center; gap: 8px; cursor: p
 <body>
 
 <div class="container">
-  <h2>T3N Phase 2</h2>
+  <h2>T3N Account Generator</h2>
   
   <div class="input-group">
     <input id="nick" placeholder="Nickname">
@@ -164,7 +164,7 @@ label { font-size: 12px; display: flex; align-items: center; gap: 8px; cursor: p
 
   <button class="primary" onclick="generate()">Execute & Copy</button>
 
-  <div id="out">System ready...</div>
+  <div id="out">ready...</div>
 </div>
 
 <div id="history">
@@ -173,14 +173,37 @@ label { font-size: 12px; display: flex; align-items: center; gap: 8px; cursor: p
 </div>
 
 <script>
-// Авто-генерация всякого мусора
 const randomNick = () => {
-    const names = ["Shadow", "Vortex", "Cyber", "Ghost", "Zero", "Neon", "Void"];
-    document.getElementById("nick").value = names[Math.floor(Math.random()*names.length)] + Math.floor(Math.random()*9999);
+    // 1. База данных для "осмысленных" ников (Linux/Tech вайб, как ты любишь)
+    const adj = ["Chortochka", "Varenik", "Cyber", "Arch", "Root", "DevNull", "Solar", "", "Silent", "FastFetch", "Rick"];
+    const nouns = ["User", "Daemon", "Shell", "Kernel", "Penguin", "Systemd", "Void", "Arch", "Bash", "Roll", "Bot"];
+    const suffixes = ["_dev", "X", "00", "Top", "OS", "1337", "Link", "320kg"];
+
+    // 2. Генератор мусора (если нужен полный хаос)
+    const charset = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const getGarbage = (len) => Array.from({length: len}, () => charset[Math.floor(Math.random() * charset.length)]).join('');
+
+    // Выбираем структуру ника
+    const structures = [
+        () => adj[Math.floor(Math.random() * adj.length)] + nouns[Math.floor(Math.random() * nouns.length)], // NeonShell
+        () => nouns[Math.floor(Math.random() * nouns.length)] + "_" + getGarbage(4), // Kernel_a7b2
+        () => adj[Math.floor(Math.random() * adj.length)] + getGarbage(3).toUpperCase(), // VoidK9L
+        () => suffixes[Math.floor(Math.random() * suffixes.length)] + nouns[Math.floor(Math.random() * nouns.length)] + Math.floor(Math.random() * 99) // XDaemon77
+    ];
+
+    // Выбираем случайную структуру
+    let result = structures[Math.floor(Math.random() * structures.length)]();
+
+    // 3. Финальный штрих: Рандомный регистр (Upper/Lower)
+    if (Math.random() > 0.7) {
+        result = result.split('').map(char => Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase()).join('');
+    }
+
+    document.getElementById("nick").value = result;
 };
 
 const randomPass = () => {
-    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%?-_[]^&*";
     let retVal = "";
     for (let i = 0; i < 12; ++i) retVal += charset.charAt(Math.floor(Math.random() * charset.length));
     document.getElementById("pass").value = retVal;
