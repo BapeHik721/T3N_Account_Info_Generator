@@ -162,15 +162,16 @@ async function initDB() {
 }
 
 async function syncToCloud() {
-    if (!fileSha) return alert("База не инициализирована!");
+    if (!fileSha) return;
     setStatus("SYNCING...", "warning");
     
     const cipher = encrypt(logs, MASTER_PASS);
-    const content = btoa(unescape(encodeURIComponent(cipher)));
+    // Оборачиваем в кавычки, чтобы GitHub сохранил это как валидную JSON-строку
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(cipher))));
 
     try {
         const res = await ghRequest('PUT', {
-            message: "update database",
+            message: "secure update",
             content: content,
             sha: fileSha
         });
