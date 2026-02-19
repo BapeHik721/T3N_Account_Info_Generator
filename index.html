@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T3N Next-Gen Manager | V2.0</title>
+    <title>T3N Next-Gen Manager | V3.0 Local Storage</title>
     <style>
         :root {
             --bg: #05070a;
@@ -13,6 +13,7 @@
             --accent: #7efaff;
             --danger: #ff4b4b;
             --success: #00ff9c;
+            --warning: #ffb86c;
         }
 
         * { box-sizing: border-box; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -40,12 +41,27 @@
         }
 
         h2 { 
-            margin: 0 0 20px; 
+            margin: 0 0 15px; 
             text-align: center; 
             text-transform: uppercase; 
             letter-spacing: 3px;
             color: var(--accent);
         }
+
+        .db-status {
+            text-align: center;
+            font-size: 10px;
+            margin-bottom: 20px;
+            color: var(--danger);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .db-status.connected { color: var(--success); }
+        .db-status:hover { filter: brightness(1.2); }
 
         .input-group { position: relative; margin-bottom: 12px; }
 
@@ -142,7 +158,11 @@
 <body>
 
 <div class="container">
-    <h2>T3N GEN V2</h2>
+    <h2>T3N GEN V3</h2>
+    
+    <div class="db-status" id="db-btn">
+        <span id="db-dot">🔴</span> <span id="db-text">DB: DISCONNECTED (Click to Mount)</span>
+    </div>
     
     <div class="input-group">
         <input id="nick" placeholder="Nickname">
@@ -172,22 +192,68 @@
 
 <div id="history">
     <h3 style="margin-top:0; font-size: 14px; color: var(--accent); display: flex; justify-content: space-between;">
-        Recent Logs <span style="opacity: 0.5; font-size: 10px; cursor: pointer;" onclick="clearLogs()">[CLEAR]</span>
+        Local Database 
     </h3>
-    <div id="hist-list"></div>
+    <div id="hist-list">
+        <div style="opacity: 0.5; font-size: 11px; text-align: center; margin-top: 20px;">Mount database to view history</div>
+    </div>
 </div>
 
 <script>
-// --- Конфиг ---
+// --- Конфиг и Состояние ---
 const checkIds = ["2fa", "age", "chat", "voice", "email", "busy"];
-let logs = JSON.parse(localStorage.getItem('t3n_logs_v2') || '[]');
+let logs = [];
+let dbHandle = null;
+
+// --- File System Access API (Магия) ---
+async function mountDB() {
+    try {
+        // Просим юзера выбрать или создать файл
+        [dbHandle] = await window.showOpenFilePicker({
+            types: [{ description: 'JSON Database', accept: {'application/json': ['.json']} }],
+            multiple: false
+        });
+
+        // Читаем файл
+        const file = await dbHandle.getFile();
+        const contents = await file.text();
+        
+        if (contents) {
+            logs = JSON.parse(contents);
+        } else {
+            logs = []; // Если файл пустой
+        }
+
+        // Обновляем UI
+        document.getElementById('db-btn').classList.add('connected');
+        document.getElementById('db-dot').innerText = '🟢';
+        document.getElementById('db-text').innerText = `DB: MOUNTED (${file.name})`;
+        updateHistoryUI();
+
+    } catch (err) {
+        console.error("Юзер отменил или браузер заблочил:", err);
+    }
+}
+
+async function syncToDB() {
+    if (!dbHandle) return; // Если база не подключена, просто скипаем (или можно добавить fallback на localStorage)
+    
+    try {
+        // Запрашиваем права на запись (браузер может спросить юзера)
+        const writable = await dbHandle.createWritable();
+        await writable.write(JSON.stringify(logs, null, 2));
+        await writable.close();
+    } catch (err) {
+        console.error("Ошибка записи в базу:", err);
+        alert("Не удалось записать в файл! Возможно, нет прав.");
+    }
+}
 
 // --- Вспомогательные функции ---
 const randomNick = () => {
     const adj = ["Chort", "Void", "Root", "Arch", "Cyber", "Dark", "Neon", "Null", "Solar", "Rick"];
     const nouns = ["Daemon", "Shell", "Kernel", "User", "Link", "Bot", "Penguin", "Varenik"];
-    const res = adj[Math.floor(Math.random() * adj.length)] + nouns[Math.floor(Math.random() * nouns.length)] + (Math.random() > 0.5 ? Math.floor(Math.random()*99) : "");
-    document.getElementById("nick").value = res;
+    document.getElementById("nick").value = adj[Math.floor(Math.random() * adj.length)] + nouns[Math.floor(Math.random() * nouns.length)] + (Math.random() > 0.5 ? Math.floor(Math.random()*99) : "");
 };
 
 const randomPass = () => {
@@ -204,6 +270,10 @@ const unixFromDDMMYY = (str) => {
 // --- Основная логика ---
 function updateHistoryUI() {
     const list = document.getElementById("hist-list");
+    if(logs.length === 0) {
+        list.innerHTML = `<div style="opacity: 0.5; font-size: 11px; text-align: center;">Database is empty</div>`;
+        return;
+    }
     list.innerHTML = logs.map((log, i) => `
         <div class="history-item" onclick="loadLog(${i})">
             <span>[${log.time}] <b>${log.nick}</b></span>
@@ -215,19 +285,21 @@ function updateHistoryUI() {
 function loadLog(i) {
     const log = logs[i];
     if (!log) return;
-    
     document.getElementById("nick").value = log.nick;
     document.getElementById("pass").value = log.pass;
     document.getElementById("date").value = log.date || "";
-    
-    // Восстанавливаем чекбоксы
     checkIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.checked = !!(log.settings && log.settings[id]);
     });
 }
 
-function generate() {
+async function generate() {
+    if (!dbHandle) {
+        alert("Сначала подключи базу (красная кнопка сверху), а то логи улетят в пустоту!");
+        return;
+    }
+
     const nick = document.getElementById("nick").value || "ghost_user";
     const pass = document.getElementById("pass").value || "qwerty";
     const dateVal = document.getElementById("date").value;
@@ -247,38 +319,29 @@ info:
   2FA [${checkState("2fa")}] | Age [${checkState("age")}] | Voice [${checkState("voice")}]
   Chat [${checkState("chat")}] | Mail [${checkState("email")}] | Busy [${checkState("busy")}]`;
 
-    // Вывод и Копирование
     document.getElementById("out").innerHTML = template.replace(/\|\|(.*?)\|\|/g, '<span class="ds-spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>');
     navigator.clipboard.writeText(template);
 
-    // Анимация кнопки
     const btn = document.getElementById("btn-main");
     const originalText = btn.innerText;
-    btn.innerText = "COPIED TO NEURAL LINK!";
+    btn.innerText = "COPIED & SAVED TO SSD!";
     btn.classList.add('copied');
     setTimeout(() => { btn.innerText = originalText; btn.classList.remove('copied'); }, 1500);
 
-    // Сохранение
+    // Добавляем в оперативу
     logs.push({ nick, pass, date: dateVal, settings, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-    if(logs.length > 30) logs.shift();
-    localStorage.setItem('t3n_logs_v2', JSON.stringify(logs));
+    
+    // Обновляем UI и сразу пишем на диск
     updateHistoryUI();
-}
-
-function clearLogs() {
-    if(confirm("Wipe all data?")) {
-        logs = [];
-        localStorage.removeItem('t3n_logs_v2');
-        updateHistoryUI();
-    }
+    await syncToDB(); 
 }
 
 // --- Слушатели ---
+document.getElementById("db-btn").addEventListener('click', mountDB);
 document.getElementById("btn-rand-nick").addEventListener('click', randomNick);
 document.getElementById("btn-rand-pass").addEventListener('click', randomPass);
 document.getElementById("btn-main").addEventListener('click', generate);
 
-updateHistoryUI();
 </script>
 </body>
 </html>
