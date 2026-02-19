@@ -1,156 +1,65 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T3N Next-Gen Manager | V3.0 Local Storage</title>
+    <title>T3N GEN V3 | Cloud Secured</title>
     <style>
         :root {
-            --bg: #05070a;
-            --card: #0d1117;
-            --border: #30363d;
-            --text: #c9d1d9;
-            --accent: #7efaff;
-            --danger: #ff4b4b;
-            --success: #00ff9c;
-            --warning: #ffb86c;
+            --bg: #05070a; --card: #0d1117; --border: #30363d;
+            --text: #c9d1d9; --accent: #7efaff; --danger: #ff4b4b;
+            --success: #00ff9c; --warning: #ffb86c;
         }
-
-        * { box-sizing: border-box; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-
+        * { box-sizing: border-box; transition: all 0.2s ease; }
         body {
-            margin: 0;
-            min-height: 100vh;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
-            display: flex;
-            padding: 40px 20px;
-            gap: 20px;
-            justify-content: center;
+            margin: 0; min-height: 100vh; background: var(--bg);
+            color: var(--text); font-family: 'JetBrains Mono', monospace;
+            display: flex; padding: 40px 20px; gap: 20px; justify-content: center; flex-wrap: wrap;
         }
-
-        .container {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            width: 420px;
-            height: fit-content;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        .container, #history {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 24px; box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
-
-        h2 { 
-            margin: 0 0 15px; 
-            text-align: center; 
-            text-transform: uppercase; 
-            letter-spacing: 3px;
-            color: var(--accent);
-        }
-
+        .container { width: 420px; height: fit-content; }
+        #history { width: 350px; max-height: 85vh; display: flex; flex-direction: column; }
+        h2 { margin: 0 0 15px; text-align: center; color: var(--accent); letter-spacing: 3px; }
         .db-status {
-            text-align: center;
-            font-size: 10px;
-            margin-bottom: 20px;
-            color: var(--danger);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            cursor: pointer;
+            text-align: center; font-size: 10px; margin-bottom: 20px;
+            padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.05);
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
         }
-
-        .db-status.connected { color: var(--success); }
-        .db-status:hover { filter: brightness(1.2); }
-
         .input-group { position: relative; margin-bottom: 12px; }
-
         input {
-            width: 100%;
-            background: #161b22;
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            outline: none;
+            width: 100%; background: #161b22; color: var(--text);
+            border: 1px solid var(--border); border-radius: 8px; padding: 12px; outline: none;
         }
-
         input:focus { border-color: var(--accent); }
-
         .gen-btn {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: var(--border);
-            border: none;
-            color: var(--accent);
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            background: var(--border); border: none; color: var(--accent);
+            padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px;
         }
-
         button.primary {
-            width: 100%;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            padding: 14px;
-            margin-top: 10px;
-            cursor: pointer;
-            font-weight: 800;
-            text-transform: uppercase;
+            width: 100%; background: var(--accent); color: #000; border: none;
+            border-radius: 8px; padding: 14px; margin-top: 10px;
+            cursor: pointer; font-weight: 800; text-transform: uppercase;
         }
-
-        button.primary:active { transform: scale(0.98); }
-        button.primary.copied { background: var(--success); }
-
         .checks {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0;
-            background: #161b22;
-            padding: 12px;
-            border-radius: 10px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            margin: 15px 0; background: #161b22; padding: 12px; border-radius: 10px;
         }
-
         label { font-size: 11px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-
-        #history {
-            width: 350px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-
         .history-item {
-            font-size: 11px;
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
+            font-size: 11px; padding: 12px; border-bottom: 1px solid var(--border);
+            cursor: pointer; display: flex; justify-content: space-between;
         }
-
         .history-item:hover { background: #161b22; color: var(--accent); }
-
         #out {
-            margin-top: 20px;
-            padding: 15px;
-            background: #000;
-            border: 1px dashed var(--accent);
-            border-radius: 10px;
-            font-size: 12px;
-            white-space: pre-wrap;
-            min-height: 100px;
+            margin-top: 20px; padding: 15px; background: #000;
+            border: 1px dashed var(--accent); border-radius: 10px;
+            font-size: 12px; white-space: pre-wrap; min-height: 100px;
         }
-
         .ds-spoiler { background: #4f545c; color: #4f545c; border-radius: 3px; padding: 0 4px; cursor: pointer; }
         .ds-spoiler.revealed { background: rgba(255,255,255,0.1); color: inherit; }
     </style>
@@ -159,21 +68,18 @@
 
 <div class="container">
     <h2>T3N GEN V3</h2>
-    
-    <div class="db-status" id="db-btn">
-        <span id="db-dot">🔴</span> <span id="db-text">DB: DISCONNECTED (Click to Mount)</span>
+    <div class="db-status" id="db-setup-btn">
+        <span id="db-dot">🔴</span> <span id="db-text">GITHUB NOT CONNECTED</span>
     </div>
     
     <div class="input-group">
         <input id="nick" placeholder="Nickname">
         <button class="gen-btn" id="btn-rand-nick">RAND</button>
     </div>
-    
     <div class="input-group">
         <input id="pass" type="text" placeholder="Password">
         <button class="gen-btn" id="btn-rand-pass">GEN</button>
     </div>
-
     <input id="date" placeholder="Date (DD.MM.YY)">
 
     <div class="checks">
@@ -186,124 +92,126 @@
     </div>
 
     <button class="primary" id="btn-main">Execute & Copy</button>
-
     <div id="out">waiting for data...</div>
 </div>
 
 <div id="history">
-    <h3 style="margin-top:0; font-size: 14px; color: var(--accent); display: flex; justify-content: space-between;">
-        Local Database 
-    </h3>
-    <div id="hist-list">
-        <div style="opacity: 0.5; font-size: 11px; text-align: center; margin-top: 20px;">Mount database to view history</div>
-    </div>
+    <h3 style="margin-top:0; font-size: 14px; color: var(--accent);">Cloud Database</h3>
+    <div id="hist-list"></div>
 </div>
 
 <script>
-// --- Конфиг и Состояние ---
+// --- Конфиг ---
 const checkIds = ["2fa", "age", "chat", "voice", "email", "busy"];
 let logs = [];
-let dbHandle = null;
+let fileSha = "";
 
-// --- File System Access API (Магия) ---
-async function mountDB() {
-    try {
-        // Просим юзера выбрать или создать файл
-        [dbHandle] = await window.showOpenFilePicker({
-            types: [{ description: 'JSON Database', accept: {'application/json': ['.json']} }],
-            multiple: false
-        });
+// Настройки из LocalStorage (чтобы не вводить каждый раз)
+let GH_TOKEN = localStorage.getItem('gh_token');
+let REPO = localStorage.getItem('gh_repo'); // Формат: "юзер/репо"
+let MASTER_PASS = localStorage.getItem('master_pass');
+const FILE_PATH = "db.json";
 
-        // Читаем файл
-        const file = await dbHandle.getFile();
-        const contents = await file.text();
-        
-        if (contents) {
-            logs = JSON.parse(contents);
-        } else {
-            logs = []; // Если файл пустой
-        }
-
-        // Обновляем UI
-        document.getElementById('db-btn').classList.add('connected');
-        document.getElementById('db-dot').innerText = '🟢';
-        document.getElementById('db-text').innerText = `DB: MOUNTED (${file.name})`;
-        updateHistoryUI();
-
-    } catch (err) {
-        console.error("Юзер отменил или браузер заблочил:", err);
-    }
+// --- GitHub API ---
+async function ghRequest(method, body = null) {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
+        method: method,
+        headers: {
+            'Authorization': `token ${GH_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json'
+        },
+        body: body ? JSON.stringify(body) : null
+    });
+    if (!res.ok) throw new Error(res.status);
+    return res.json();
 }
 
-async function syncToDB() {
-    if (!dbHandle) return; // Если база не подключена, просто скипаем (или можно добавить fallback на localStorage)
-    
+// --- Crypto ---
+const encrypt = (data, pass) => CryptoJS.AES.encrypt(JSON.stringify(data), pass).toString();
+const decrypt = (cipher, pass) => {
     try {
-        // Запрашиваем права на запись (браузер может спросить юзера)
-        const writable = await dbHandle.createWritable();
-        await writable.write(JSON.stringify(logs, null, 2));
-        await writable.close();
-    } catch (err) {
-        console.error("Ошибка записи в базу:", err);
-        alert("Не удалось записать в файл! Возможно, нет прав.");
-    }
-}
-
-// --- Вспомогательные функции ---
-const randomNick = () => {
-    const adj = ["Chort", "Void", "Root", "Arch", "Cyber", "Dark", "Neon", "Null", "Solar", "Rick"];
-    const nouns = ["Daemon", "Shell", "Kernel", "User", "Link", "Bot", "Penguin", "Varenik"];
-    document.getElementById("nick").value = adj[Math.floor(Math.random() * adj.length)] + nouns[Math.floor(Math.random() * nouns.length)] + (Math.random() > 0.5 ? Math.floor(Math.random()*99) : "");
+        const bytes = CryptoJS.AES.decrypt(cipher, pass);
+        const decoded = bytes.toString(CryptoJS.enc.Utf8);
+        return decoded ? JSON.parse(decoded) : null;
+    } catch(e) { return null; }
 };
 
-const randomPass = () => {
-    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    document.getElementById("pass").value = Array.from({length: 12}, () => charset[Math.floor(Math.random() * charset.length)]).join('');
-};
-
-const unixFromDDMMYY = (str) => {
-    if(!str || !str.includes('.')) return Math.floor(Date.now() / 1000);
-    const [d, m, y] = str.split(".").map(Number);
-    return Math.floor(new Date(y < 100 ? 2000 + y : y, m - 1, d).getTime() / 1000);
-};
-
-// --- Основная логика ---
-function updateHistoryUI() {
-    const list = document.getElementById("hist-list");
-    if(logs.length === 0) {
-        list.innerHTML = `<div style="opacity: 0.5; font-size: 11px; text-align: center;">Database is empty</div>`;
+// --- Core ---
+async function initDB() {
+    if (!GH_TOKEN || !REPO || !MASTER_PASS) {
+        setStatus("SETUP REQUIRED", "warning");
         return;
     }
-    list.innerHTML = logs.map((log, i) => `
+
+    try {
+        const data = await ghRequest('GET');
+        fileSha = data.sha;
+        const encryptedContent = atob(data.content);
+        const decrypted = decrypt(encryptedContent, MASTER_PASS);
+
+        if (decrypted) {
+            logs = decrypted;
+            updateHistoryUI();
+            setStatus("CONNECTED & DECRYPTED", "success");
+        } else {
+            setStatus("WRONG MASTER PASS", "danger");
+        }
+    } catch (e) {
+        setStatus("CONNECTION ERROR (404?)", "danger");
+    }
+}
+
+async function syncToCloud() {
+    if (!fileSha) return alert("База не инициализирована!");
+    setStatus("SYNCING...", "warning");
+    
+    const cipher = encrypt(logs, MASTER_PASS);
+    const content = btoa(unescape(encodeURIComponent(cipher)));
+
+    try {
+        const res = await ghRequest('PUT', {
+            message: "update database",
+            content: content,
+            sha: fileSha
+        });
+        fileSha = res.content.sha;
+        setStatus("SYNCED", "success");
+    } catch (e) {
+        setStatus("SYNC ERROR", "danger");
+    }
+}
+
+function setStatus(text, type) {
+    const el = document.getElementById('db-setup-btn');
+    const dot = document.getElementById('db-dot');
+    document.getElementById('db-text').innerText = text;
+    dot.innerText = type === 'success' ? '🟢' : type === 'warning' ? '🟡' : '🔴';
+}
+
+// --- UI Helpers ---
+function updateHistoryUI() {
+    const list = document.getElementById("hist-list");
+    list.innerHTML = logs.length ? logs.map((log, i) => `
         <div class="history-item" onclick="loadLog(${i})">
             <span>[${log.time}] <b>${log.nick}</b></span>
             <span style="opacity:0.3">#${i+1}</span>
         </div>
-    `).reverse().join('');
+    `).reverse().join('') : '<div style="opacity:0.5;text-align:center">Empty</div>';
 }
 
 function loadLog(i) {
     const log = logs[i];
-    if (!log) return;
     document.getElementById("nick").value = log.nick;
     document.getElementById("pass").value = log.pass;
     document.getElementById("date").value = log.date || "";
-    checkIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.checked = !!(log.settings && log.settings[id]);
-    });
+    checkIds.forEach(id => document.getElementById(id).checked = !!(log.settings && log.settings[id]));
 }
 
+// --- Main Action ---
 async function generate() {
-    if (!dbHandle) {
-        alert("Сначала подключи базу (красная кнопка сверху), а то логи улетят в пустоту!");
-        return;
-    }
-
-    const nick = document.getElementById("nick").value || "ghost_user";
-    const pass = document.getElementById("pass").value || "qwerty";
+    const nick = document.getElementById("nick").value || "ghost";
+    const pass = document.getElementById("pass").value || "pass";
     const dateVal = document.getElementById("date").value;
-    const unix = unixFromDDMMYY(dateVal);
     
     const settings = {};
     const checkState = (id) => {
@@ -312,36 +220,49 @@ async function generate() {
         return isChecked ? "✅" : "❌";
     };
 
-    const template = `nickname: \`${nick}\`
-password: ||${pass}||
-created: <t:${unix}:R>
-info:
-  2FA [${checkState("2fa")}] | Age [${checkState("age")}] | Voice [${checkState("voice")}]
-  Chat [${checkState("chat")}] | Mail [${checkState("email")}] | Busy [${checkState("busy")}]`;
+    const template = `nickname: \`${nick}\`\npassword: ||${pass}||\ncreated: <t:${unixFromDDMMYY(dateVal)}:R>\ninfo:\n 2FA [${checkState("2fa")}] | Age [${checkState("age")}] | Voice [${checkState("voice")}]\n Chat [${checkState("chat")}] | Mail [${checkState("email")}] | Busy [${checkState("busy")}]`;
 
     document.getElementById("out").innerHTML = template.replace(/\|\|(.*?)\|\|/g, '<span class="ds-spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>');
     navigator.clipboard.writeText(template);
 
-    const btn = document.getElementById("btn-main");
-    const originalText = btn.innerText;
-    btn.innerText = "COPIED & SAVED TO SSD!";
-    btn.classList.add('copied');
-    setTimeout(() => { btn.innerText = originalText; btn.classList.remove('copied'); }, 1500);
-
-    // Добавляем в оперативу
-    logs.push({ nick, pass, date: dateVal, settings, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-    
-    // Обновляем UI и сразу пишем на диск
+    logs.push({ nick, pass, date: dateVal, settings, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
     updateHistoryUI();
-    await syncToDB(); 
+    await syncToCloud();
 }
 
-// --- Слушатели ---
-document.getElementById("db-btn").addEventListener('click', mountDB);
-document.getElementById("btn-rand-nick").addEventListener('click', randomNick);
-document.getElementById("btn-rand-pass").addEventListener('click', randomPass);
-document.getElementById("btn-main").addEventListener('click', generate);
+// Настройка через промпты
+document.getElementById('db-setup-btn').onclick = () => {
+    const t = prompt("GitHub Token:", GH_TOKEN || "");
+    const r = prompt("Repo (user/repo):", REPO || "");
+    const p = prompt("Master Password:", MASTER_PASS || "");
+    if (t && r && p) {
+        localStorage.setItem('gh_token', t);
+        localStorage.setItem('gh_repo', r);
+        localStorage.setItem('master_pass', p);
+        location.reload();
+    }
+};
 
+const unixFromDDMMYY = (str) => {
+    if(!str || !str.includes('.')) return Math.floor(Date.now() / 1000);
+    const [d, m, y] = str.split(".").map(Number);
+    return Math.floor(new Date(y < 100 ? 2000 + y : y, m - 1, d).getTime() / 1000);
+};
+
+document.getElementById("btn-rand-nick").onclick = () => {
+    const adj = ["Cyber", "Dark", "Neon", "Null", "Solar"];
+    const nouns = ["Daemon", "Shell", "Kernel", "User", "Link"];
+    document.getElementById("nick").value = adj[Math.floor(Math.random()*adj.length)] + nouns[Math.floor(Math.random()*nouns.length)] + Math.floor(Math.random()*99);
+};
+
+document.getElementById("btn-rand-pass").onclick = () => {
+    document.getElementById("pass").value = Math.random().toString(36).slice(-10) + "!";
+};
+
+document.getElementById("btn-main").onclick = generate;
+
+// Start
+initDB();
 </script>
 </body>
 </html>
