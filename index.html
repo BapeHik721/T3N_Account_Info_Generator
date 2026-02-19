@@ -106,11 +106,12 @@ const checkIds = ["2fa", "age", "chat", "voice", "email", "busy"];
 let logs = [];
 let fileSha = "";
 
-// Настройки из LocalStorage (чтобы не вводить каждый раз)
+// Настройки из LocalStorage
 let GH_TOKEN = localStorage.getItem('gh_token');
-let REPO = localStorage.getItem('gh_repo'); // Формат: "юзер/репо"
+let REPO = localStorage.getItem('gh_repo'); 
+let DB_NAME = localStorage.getItem('gh_db_name') || "db"; // Имя файла (без .json)
 let MASTER_PASS = localStorage.getItem('master_pass');
-const FILE_PATH = "db.json";
+let FILE_PATH = `${DB_NAME}.json`; // Формируем путь
 
 // --- GitHub API ---
 async function ghRequest(method, body = null) {
@@ -144,40 +145,38 @@ async function initDB() {
         const data = await ghRequest('GET');
         fileSha = data.sha;
         
-        // 1. Декодируем из Base64 гитхаба в обычный текст
         const rawContent = decodeURIComponent(escape(atob(data.content)));
 
-        // 2. Если файл пустой [], создаем пустой массив
         if (rawContent === "[]") {
             logs = [];
             updateHistoryUI();
-            setStatus("CONNECTED (EMPTY)", "success");
+            setStatus(`CONNECTED (${DB_NAME})`, "success");
             return;
         }
 
-        // 3. Пытаемся распарсить как строку (убираем лишние кавычки из файла)
         let encryptedData;
         try {
             encryptedData = JSON.parse(rawContent);
         } catch(e) {
-            // Если в файле лежит каша БЕЗ кавычек (старый формат), берем её как есть
             encryptedData = rawContent;
         }
 
-        // 4. Дешифруем
         const decrypted = decrypt(encryptedData, MASTER_PASS);
 
         if (decrypted) {
             logs = decrypted;
             updateHistoryUI();
-            setStatus("CONNECTED", "success");
+            setStatus(`CONNECTED (${DB_NAME})`, "success");
         } else {
-            // Если дешифровка выдала null - значит либо пароль не тот, либо каша битая
             setStatus("WRONG MASTER PASS", "danger");
         }
     } catch (e) {
         console.error(e);
-        setStatus("CONNECTION ERROR", "danger");
+        if(e.message === "404") {
+            setStatus("FILE NOT FOUND (CREATE IT!)", "danger");
+        } else {
+            setStatus("CONNECTION ERROR", "danger");
+        }
     }
 }
 
@@ -186,12 +185,11 @@ async function syncToCloud() {
     setStatus("SYNCING...", "warning");
     
     const cipher = encrypt(logs, MASTER_PASS);
-    // Оборачиваем в кавычки, чтобы GitHub сохранил это как валидную JSON-строку
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(cipher))));
 
     try {
         const res = await ghRequest('PUT', {
-            message: "secure update",
+            message: `update ${DB_NAME}`,
             content: content,
             sha: fileSha
         });
@@ -203,7 +201,6 @@ async function syncToCloud() {
 }
 
 function setStatus(text, type) {
-    const el = document.getElementById('db-setup-btn');
     const dot = document.getElementById('db-dot');
     document.getElementById('db-text').innerText = text;
     dot.innerText = type === 'success' ? '🟢' : type === 'warning' ? '🟡' : '🔴';
@@ -255,10 +252,13 @@ async function generate() {
 document.getElementById('db-setup-btn').onclick = () => {
     const t = prompt("GitHub Token:", GH_TOKEN || "");
     const r = prompt("Repo (user/repo):", REPO || "");
+    const n = prompt("DB Name (filename without .json):", DB_NAME || "db");
     const p = prompt("Master Password:", MASTER_PASS || "");
-    if (t && r && p) {
+    
+    if (t && r && n && p) {
         localStorage.setItem('gh_token', t);
         localStorage.setItem('gh_repo', r);
+        localStorage.setItem('gh_db_name', n);
         localStorage.setItem('master_pass', p);
         location.reload();
     }
